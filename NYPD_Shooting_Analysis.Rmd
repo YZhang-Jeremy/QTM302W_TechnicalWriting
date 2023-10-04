@@ -11,8 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction to Data
 
-This data showcases aggregate YTD (Year to Date) data on arrests made by the NYPD in NYC. This data is extracted by the Office of Management Analysis and Planning and is manually tracted every quarter. The data includes information about the nature of the arrest, including location, time, and type of crime. Additionally, demographic information is also included, such as: race, age and sex. Our analysis will focus on one particular type of crime, namely shootings, and see how trends in shootings have changed over time in NYC. We will use the demographic information to see how these trends have affected different age, racial and sex groups.
-More information and a link to our data can be found at https://catalog.data.gov/dataset/nypd-arrest-data-year-to-date. 
+This data showcases aggregate YTD (Year to Date) data on arrests made by the NYPD in NYC. This data is extracted by the Office of Management Analysis and Planning and is manually tracted every quarter. The data includes information about the nature of the arrest, including location, time, and type of crime. Additionally, demographic information is also included, such as: race, age and sex. Our analysis will focus on one particular type of crime, namely shootings, and see how trends in shootings have changed over time in NYC. We will use the demographic information to see how these trends have affected different age, racial and sex groups. More information and a link to our data can be found at <https://catalog.data.gov/dataset/nypd-arrest-data-year-to-date>.
 
 ```{r}
 library(tidyverse)
@@ -21,7 +20,7 @@ data <- read_csv("./NYPD_Shooting_Incident_Data__Historic_.csv")
 
 ## Summary of Variables
 
-  Here is a brief summary of our variables and the variable types associated with them. We will focus on a handful, such as: VIC_AGE_GROUP, VIC_RACE, VIC_SEX, all of which are characters. There are also numeric variables, such as OCCUR_TIME, which lists the time of the crime. 
+Here is a brief summary of our variables and the variable types associated with them. We will focus on a handful, such as: `VIC_AGE_GROUP`, `VIC_RACE`, `VIC_SEX`, all of which are characters. There are also numeric variables, such as `OCCUR_TIME`, which lists the time of the crime.
 
 ```{r}
 summary(data)
@@ -29,7 +28,7 @@ summary(data)
 
 ## Data Cleaning
 
-  Now we will clean the data to eliminate any discrepancies that may exist within the data. For example, in PERP_AGE_GROUP there are values in the raw data like "224" and "UNKNOWN" that were entered in manually. We can use na_if() to change these values to all be NA in order to make the data more legible. We will do this kind of cleaning for all the major variables. 
+Now we will clean the data to eliminate any discrepancies that may exist within the data. For example, in `PERP_AGE_GROUP` there are values in the raw data like `224` and `UNKNOWN` that needs to be addressed. We can use `na_if()` to change these values to all be `NA` in order to make the data more legible. We will do this kind of cleaning for all the major variables.
 
 ```{r}
 cleaned_data <- data
@@ -44,7 +43,9 @@ cleaned_data <- cleaned_data %>%
 # Check possible values
 unique(cleaned_data$BORO) # Looks Fine
 ```
-As stated before, we need to clean the variable PERP_AGE_GROUP to eliminate erroneous values like "940", "223" and "1020" because they do not correlate to age groups and are likely the result of incorrect manual inputs. We want to aggregate all of these inconsistancies, including entries like "UNKOWN" and "NULL" into the NA column.  
+
+As stated before, we need to clean the column `PERP_AGE_GROUP` to eliminate erroneous values like `940`, `223` and `1020` because they do not correlate to age groups and are likely the result of incorrect manual inputs. We want to aggregate all of these inconsistencies, including entries like `UNKOWN` and `NULL` into `NA`.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$PERP_AGE_GROUP)
@@ -60,7 +61,9 @@ cleaned_data <- cleaned_data %>%
 # Check results
 unique(cleaned_data$PERP_AGE_GROUP)
 ```
-We will now inspect and clean PERP_SEX. For this particular cleaning, we are not only replacing "null" with NA, but also the "U" column. The "U" represents an "unspecified" entry, but since it has been misused historically, we will also aggregate it to the NA column. 
+
+We will now inspect and clean `PERP_SEX`. For this particular cleaning, we are not only replacing `null` with `NA`, but also the `U` entries. The `U` represents an "unspecified" entry, but since it has been misused historically, we will also aggregate it to `NA`.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$PERP_SEX)
@@ -73,7 +76,9 @@ cleaned_data <- cleaned_data %>%
 # Check results
 unique(cleaned_data$PERP_SEX)
 ```
-Finally we will inspect and clean PERP_RACE. In order to make our graphs more legible, we will use recode() the names of our categories to ensure that they do not overlap on our visualizations
+
+Finally we will inspect and clean `PERP_RACE`. In order to make our graphs more legible, we will use `recode()` on the names of our categories to ensure that they do not overlap on our visualizations.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$PERP_RACE)
@@ -91,7 +96,9 @@ cleaned_data <- cleaned_data %>%
 # Check results
 unique(cleaned_data$PERP_RACE)
 ```
-Moving on from PERP data we will now inspect victim data starting with VIC_AGE_GROUP. Much of the cleaning will mirror what we did for PERP data, so reference those comments for any questions about why we are cleaning particular variables 
+
+Moving on from PERP data we will now inspect victim data starting with `VIC_AGE_GROUP`. Much of the cleaning mirrors what we did for PERP data.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$VIC_AGE_GROUP)
@@ -105,7 +112,8 @@ cleaned_data <- cleaned_data %>%
 unique(cleaned_data$VIC_AGE_GROUP)
 ```
 
-We will now inspect and clean VIC_SEX
+We will now inspect and clean `VIC_SEX`.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$VIC_SEX)
@@ -118,7 +126,8 @@ cleaned_data <- cleaned_data %>%
 unique(cleaned_data$VIC_SEX)
 ```
 
-Now we will inspect and clean VIC_RACE
+Now we will inspect and clean `VIC_RACE`.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$VIC_RACE)
@@ -137,10 +146,11 @@ unique(cleaned_data$VIC_RACE)
 ```
 
 ## Initial Exploration with Visualization
-  
-  Now that the data is cleaned, we can investigate some trends within our data. Below we have created three graphs, one that shows the volume of shootings by age group, another that shows the volume by racial group and lastly a graph that tracks the total shootings over the years available in the data. 
 
-## Graph A (Age based Trends)
+Now that the data is cleaned, we can investigate some trends within our data. Below we have created three graphs, one that shows the volume of shootings by age group, another that shows the volume by racial group and lastly a graph that tracks the total shootings over the years available in the data.
+
+### Graph A (Age based Trends)
+
 ```{r}
 # Use ggplot to create a histogram using the data from VIC_AGE_GROUP
 ggplot(cleaned_data, aes(x = VIC_AGE_GROUP)) + 
@@ -150,8 +160,10 @@ ggplot(cleaned_data, aes(x = VIC_AGE_GROUP)) +
   geom_bar()
 ```
 
+From Graph A we can see that the highest age group of victims of shootings are those between 25 and 44 years olds, followed by 18-24 year olds. Together these two age groups comprise of the majority of shooting cases addressed by the NYPD.
 
-## Graph B (Racial Trends)
+### Graph B (Racial Trends)
+
 ```{r}
 # Use ggplot to create a histogram using the data from VIC_RACE
 ggplot(cleaned_data, aes(x = VIC_RACE)) + 
@@ -161,9 +173,10 @@ ggplot(cleaned_data, aes(x = VIC_RACE)) +
   geom_bar()
 ```
 
+From Graph B we see that the predominate racial group that falls victim to shootings are Black Americans.
 
+### Graph C (Yearly Trends)
 
-## Graph C (Yearly Trends)
 ```{r}
 # Create a OCCUR_YEAR variable from the year column of OCCUR_DATE
 cleaned_data <- cleaned_data %>%
@@ -184,4 +197,4 @@ ggplot(yearly_counts, aes(x = OCCUR_YEAR, y = COUNT)) +
        y = "Count")
 ```
 
-From Graph A we can see that the highest age group of victims of shootings are those between 25 and 44 years olds, followed by 18-24 year olds. Together these two age groups comprise of the majority of shooting cases addressed by the NYPD. From Graph B we see that the predominate racial group that falls victim to shootings are Black Americans. Finally graph C sheds some light into the historic trends of shootings and how it has fluctuated year to year. Interestingly it shows that in 2020 shootings skyrocketed and rose to previous levels seen around 2010. This might be explained by the effects that the COVID-19 pandemic and ensuing lockdown on the economy and society as a whole. 
+Finally graph C sheds some light into the historic trends of shootings and how it has fluctuated year to year. Interestingly it shows that in 2020 shootings skyrocketed and rose to previous levels seen around 2010. This might be explained by the effects that the COVID-19 pandemic and the ensuing lockdown on the economy and society as a whole.
