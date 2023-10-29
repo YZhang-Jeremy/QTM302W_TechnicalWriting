@@ -11,24 +11,57 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction to Data
 
-This data showcases aggregate YTD (Year to Date) data on arrests made by the NYPD in NYC. This data is extracted by the Office of Management Analysis and Planning and is manually tracted every quarter. The data includes information about the nature of the arrest, including location, time, and type of crime. Additionally, demographic information is also included, such as: race, age and sex. Our analysis will focus on one particular type of crime, namely shootings, and see how trends in shootings have changed over time in NYC. We will use the demographic information to see how these trends have affected different age, racial and sex groups. More information and a link to our data can be found at <https://catalog.data.gov/dataset/nypd-arrest-data-year-to-date>.
+This data showcases shooting incidents recorded by NYPD across the five boroughs in NYC from 2006 through the end of 2022. This data is extracted by the Office of Management Analysis and Planning and is updated by the end of each year. The data is published in various data formats--including JSON, CSV, and XML--and is available for public access on [NYC Open Data](https://data.cityofnewyork.us/Public-Safety/NYPD-Shooting-Incident-Data-Historic-/833y-fsy8). The data includes information about the nature of the arrest, including location, time, and type of crime. Additionally, demographic information is also included, such as: race, age and sex. 
+
+Our primary objective is to conduct a comprehensive analysis of the data, focusing specifically on the trends related to shootings in New York City over time. We aim to identify patterns, shifts, and fluctuations in shooting incidents and understand how they have evolved. Additionally, we will leverage the demographic information included in the data set to examine how these trends have influenced different age groups, racial communities, and gender-based groups within the city. This analysis will provide critical insights into the dynamics of shootings in NYC, shedding light on any disparities or specific demographic correlations that may exist in this context.
+
+Please note that any correlations or patterns found in our analysis is purely based on the data set provided by the NYPD. Any bias in the results that are due to biases in data collection or data entry are outside of our control. We want to recognize the role that historic policies like poor policing and redlining have on various communities within the city of New York and the possibility that those lingering policies have continued to skew interactions with law enforcement in certain communities and thus may have impacted our data. 
+
+More information and a link to our data can be found at:  
+```
+Publisher data.cityofnewyork.us. (2023, April 27). NYPD Shooting Incident Data (Historic). Catalog. https://data.cityofnewyork.us/Public-Safety/NYPD-Shooting-Incident-Data-Historic-/833y-fsy8
+```
+
 
 ```{r}
 library(tidyverse)
+library(ggplot2)
+library(ggmap)
 data <- read_csv("./NYPD_Shooting_Incident_Data__Historic_.csv")
 ```
 
 ## Summary of Variables
 
-Here is a brief summary of our variables and the variable types associated with them. We will focus on a handful, such as: `VIC_AGE_GROUP`, `VIC_RACE`, `VIC_SEX`, all of which are characters. There are also numeric variables, such as `OCCUR_TIME`, which lists the time of the crime.
+Before delving into analyzing the data, we first try to get an overview of the variables and the variable types in this data set. This data sets includes many variables related to the details of incidents, however many of which will not used in this study. 
 
 ```{r}
+head(data, 3)
 summary(data)
 ```
 
+We will focus on a handful "story-telling" factors for this analysis. This ranges from the sex, age, and race information of perpertrators and victims (`VIC_SEX`, `PERP_SEX`, `VIC_AGE_GROUP`, `PERP_AGE_GROUP`, `VIC_RACE`, `PERP_RACE`) to the deographical features associated to the incidents (`OCCUR_DATE`, `OCCUR_TIME`, `Longitude`, `Latitude`). For an introduction to the variables, please refer to the following table. 
+
+| Variable        | Description           | Type  |
+| ------------- |:-------------:| -----:|
+| `OCCUR_DATE` | Incident Date | chr |
+| `OCCUR_TIME` | Incident Time | time |
+| `Longitude` | Location Longitude | num |
+| `Latitude` | Location Latitude | num |
+| `VIC_SEX` | Victim Sex | chr |
+| `PERP_SEX` | Perpetrator Sex | chr |
+| `VIC_AGE_GROUP` | Victim Age Group | chr |
+| `PERP_AGE GROUP` | Perpetrator Age Group | chr |
+| `VIC_RACE` | Victim Race | chr |
+| `PERP_RACE` | Perpetrator Race | chr |
+
+
 ## Data Cleaning
 
-Now we will clean the data to eliminate any discrepancies that may exist within the data. For example, in `PERP_AGE_GROUP` there are values in the raw data like `224` and `UNKNOWN` that needs to be addressed. We can use `na_if()` to change these values to all be `NA` in order to make the data more legible. We will do this kind of cleaning for all the major variables.
+Before running any analysis on this data, we will first investigate the reliability and clean the data to eliminate any discrepancies that may exist within the data. 
+
+### Variable Type
+
+First of all, we noted that variable `OCCUR_DATE` is stored as `chr` but not correctly recognized as values of the `date` type. To facilitate our analysis and generate insights, we must first convert it into the right type.
 
 ```{r}
 cleaned_data <- data
@@ -39,12 +72,23 @@ cleaned_data <- cleaned_data %>%
   mutate(OCCUR_DATE = as.Date(OCCUR_DATE, format = "%m/%d/%Y"))
 ```
 
+
+### Unexpcted Values
+
+#### Borough
+
+To check for the potential presence of unexpected or illegal values, we run `unique()` on columns to see the possible values in that column. For example, we check on `BORO` and the results look just fine.
+
 ```{r}
 # Check possible values
 unique(cleaned_data$BORO) # Looks Fine
 ```
 
-As stated before, we need to clean the column `PERP_AGE_GROUP` to eliminate erroneous values like `940`, `223` and `1020` because they do not correlate to age groups and are likely the result of incorrect manual inputs. We want to aggregate all of these inconsistencies, including entries like `UNKOWN` and `NULL` into `NA`.
+#### Age Group
+
+However, in `PERP_AGE_GROUP` there are values in the raw data like `224` and `UNKNOWN` that needs to be addressed. We can use `na_if()` to change these values to all be `NA` in order to make the data legible. We will do this for many other variables.
+
+Other than the NA values, we also need to eliminate erroneous values like `940`, `223` and `1020` in the column `PERP_AGE_GROUP` because they do not correlate to age groups and are likely the result of incorrect manual inputs. We want to aggregate all of these inconsistencies, including entries like `UNKOWN` and `NULL` into `NA`.
 
 ```{r}
 # Check possible values
@@ -62,7 +106,26 @@ cleaned_data <- cleaned_data %>%
 unique(cleaned_data$PERP_AGE_GROUP)
 ```
 
-We will now inspect and clean `PERP_SEX`. For this particular cleaning, we are not only replacing `null` with `NA`, but also the `U` entries. The `U` represents an "unspecified" entry, but since it has been misused historically, we will also aggregate it to `NA`.
+And we do a similar job with Victims' age group. 
+
+```{r}
+# Check possible values
+unique(cleaned_data$VIC_AGE_GROUP)
+
+# Formatize "Unknown" and unexpected values
+cleaned_data <- cleaned_data %>%
+  mutate(VIC_AGE_GROUP = na_if(VIC_AGE_GROUP, "UNKNOWN")) %>% 
+  mutate(VIC_AGE_GROUP = na_if(VIC_AGE_GROUP, "1022")) 
+
+# Check results
+unique(cleaned_data$VIC_AGE_GROUP)
+```
+
+#### Sex
+
+We will now inspect and clean `PERP_SEX` and `VIC_RACE`. For this particular cleaning, we are not only replacing `null` with `NA`, but also the `U` entries. 
+
+In our data analysis, we have taken the decision to replace all `U` (unspecified) entries in the sex column with `NA`. This decision stems from several considerations. Firstly, historically, the `U` designation has been misunderstood and, as a result, misused by NYPD agents. This misuse can lead to misleading analysis and conclusions. Secondly, there have been instances where agents failed to report the self-identified gender of individuals involved in incidents. Lastly, in cases involving severe violence, the physical condition of the body might be so compromised that accurate sex determination becomes challenging. Given these complexities, replacing `U` with `NA` provides a clearer representation in our analysis, emphasizing the data's limitations or gaps without making potentially inaccurate assumptions.
 
 ```{r}
 # Check possible values
@@ -75,9 +138,21 @@ cleaned_data <- cleaned_data %>%
 
 # Check results
 unique(cleaned_data$PERP_SEX)
+
+# Check possible values
+unique(cleaned_data$VIC_SEX)
+
+# Formatize "Unknown" and unexpected values
+cleaned_data <- cleaned_data %>%
+  mutate(VIC_SEX = na_if(VIC_SEX, "U"))
+
+# Check results
+unique(cleaned_data$VIC_SEX)
 ```
 
-Finally we will inspect and clean `PERP_RACE`. In order to make our graphs more legible, we will use `recode()` on the names of our categories to ensure that they do not overlap on our visualizations.
+#### Race
+
+Finally we will inspect and clean `PERP_RACE` and `VIC_RACE`. Other than cleaning up `UNKNOWN` values, in order to make our graphs more legible, we will use `recode()` on the names of our categories to ensure that the names are not too long that the texts overlap in our visualizations. 
 
 ```{r}
 # Check possible values
@@ -95,40 +170,7 @@ cleaned_data <- cleaned_data %>%
 
 # Check results
 unique(cleaned_data$PERP_RACE)
-```
 
-Moving on from PERP data we will now inspect victim data starting with `VIC_AGE_GROUP`. Much of the cleaning mirrors what we did for PERP data.
-
-```{r}
-# Check possible values
-unique(cleaned_data$VIC_AGE_GROUP)
-
-# Formatize "Unknown" and unexpected values
-cleaned_data <- cleaned_data %>%
-  mutate(VIC_AGE_GROUP = na_if(VIC_AGE_GROUP, "UNKNOWN")) %>% 
-  mutate(VIC_AGE_GROUP = na_if(VIC_AGE_GROUP, "1022")) 
-
-# Check results
-unique(cleaned_data$VIC_AGE_GROUP)
-```
-
-We will now inspect and clean `VIC_SEX`.
-
-```{r}
-# Check possible values
-unique(cleaned_data$VIC_SEX)
-
-# Formatize "Unknown" and unexpected values
-cleaned_data <- cleaned_data %>%
-  mutate(VIC_SEX = na_if(VIC_SEX, "U"))
-
-# Check results
-unique(cleaned_data$VIC_SEX)
-```
-
-Now we will inspect and clean `VIC_RACE`.
-
-```{r}
 # Check possible values
 unique(cleaned_data$VIC_RACE)
 
@@ -149,33 +191,33 @@ unique(cleaned_data$VIC_RACE)
 
 Now that the data is cleaned, we can investigate some trends within our data. Below we have created three graphs, one that shows the volume of shootings by age group, another that shows the volume by racial group and lastly a graph that tracks the total shootings over the years available in the data.
 
-### Graph A (Age based Trends)
+### Visualization A (Racial Trends)
 
 ```{r}
-# Use ggplot to create a histogram using the data from VIC_AGE_GROUP
-ggplot(cleaned_data, aes(x = VIC_AGE_GROUP)) + 
-  labs(title=("NYPD-Recorded Shooting Victims by Age Group"),
-       x="Age Groups",
-       y="Count") + 
-  geom_bar()
+# Calculate percentage
+vic_race_counts <- table(cleaned_data$VIC_RACE)
+vic_race_percentages <- (vic_race_counts / sum(vic_race_counts)) * 100
+
+perp_race_counts <- table(cleaned_data$PERP_RACE)
+perp_race_percentages <- (perp_race_counts / sum(perp_race_counts)) * 100
+
+# Prepare dataframe for plotting
+df_vic <- data.frame(Race = names(vic_race_percentages), Count = as.numeric(vic_race_percentages), Type = 'Victim')
+df_perp <- data.frame(Race = names(perp_race_percentages), Count = as.numeric(perp_race_percentages), Type = 'Perpetrator')
+combined_df <- rbind(df_vic, df_perp)
+
+# Plot bar graph
+ggplot(data = combined_df, aes(x = Race, y = Count, fill = Type)) +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Race Distribution of Victims and Perpetrators (2006-2022)", y = "Percentage", x = "Race")
 ```
 
-From Graph A we can see that the highest age group of victims of shootings are those between 25 and 44 years olds, followed by 18-24 year olds. Together these two age groups comprise of the majority of shooting cases addressed by the NYPD.
+It is notable that `BLACK` makes up over 60% of both victims and perpetrators. Specifically, the percentage of perpetrators within this group is slightly higher than that of victims. We note the same trend in `WHITE HISP`. In contrast, the `BLK HISP`, `WHITE`, and `AAPI` categories represent a substantial number of victims and a slightly lesser number of perpetrators. We are not able to make any conclusions behind this pephenomenon based on this data set. Further research should be done to answer these questions. 
 
-### Graph B (Racial Trends)
+Again, it is important here to mention the impact that historic racist policies have had on marginalized communities, especially Black and Brown communities. Policies like "stop and frisk" that was popular in the Michael Bloomberg mayoral era in NYC predominately targeted Black and Brown communities, causing deep distrust and agitation between law enforcement and community members. The discrepancy in policing may lead to various levels of under-reporting and over-reporting for different communities. Historial context is always important when viewing data to understand the origin of the data and the people behind it. 
 
-```{r}
-# Use ggplot to create a histogram using the data from VIC_RACE
-ggplot(cleaned_data, aes(x = VIC_RACE)) + 
-  labs(title=("NYPD-Recorded Shooting Victims by Race"),
-       x="Race",
-       y="Count") + 
-  geom_bar()
-```
-
-From Graph B we see that the predominate racial group that falls victim to shootings are Black Americans.
-
-### Graph C (Yearly Trends)
+### Visualization B (Yearly Trends)
 
 ```{r}
 # Create a OCCUR_YEAR variable from the year column of OCCUR_DATE
@@ -197,4 +239,41 @@ ggplot(yearly_counts, aes(x = OCCUR_YEAR, y = COUNT)) +
        y = "Count")
 ```
 
-Finally graph C sheds some light into the historic trends of shootings and how it has fluctuated year to year. Interestingly it shows that in 2020 shootings skyrocketed and rose to previous levels seen around 2010. This might be explained by the effects that the COVID-19 pandemic and the ensuing lockdown on the economy and society as a whole.
+Visualization B sheds some light into the historic trends of shootings and how it has fluctuated year to year. Interestingly it shows that in 2020 shootings skyrocketed and rose to previous levels seen around 2010. Below we provide some social context as a way to contextualize society during the rise in shootings in NYC.
+
+In NYC and around the world, communities and governments were battling with the COVID-19 pandemic, the economic effects of lock down and the strain on the healthcare system. Not only did the pandemic and resulting lock down spur on a looming economic downturn in the US, but with it came deep social unrest and discontentment with government at all levels. 
+
+Only considering the US, there was an economic tension exemplified by a jump from around 3.5% unemployment in 2019 to almost 15% by the end of 2020. Coupled with social unrest resulting from national instances of police brutality and the death of George Floyd, it goes without saying that tensions in NYC but around the country were at levels unseen since the Great Recession in 2009 and the LA riots in the late 1990's. This might have led to more crime as well as more frequent and violent gang activities in NYC. 
+
+However, it is also worthnoting that the reporting level may have also changed during the span of this data set, due to variations in police presence and report mechanisms. 
+
+All of these factors comprised the context surrounding our data and are important details to keep in mind when coming to any conclusions.
+
+### Visualization C (Map of Shootings)
+
+```{r}
+library(sf)
+library(rnaturalearth)
+
+# Get NY Map
+all_states <- ne_states(returnclass = "sf")
+nyc_shape <- all_states[all_states$iso_3166_2 == "US-NY", ]
+
+ggplot(data = nyc_shape) +
+  geom_sf() +
+  geom_point(data = cleaned_data, aes(x = Longitude, y = Latitude), alpha = 0.5, color = "blue", size = 0.1) +
+  coord_sf(xlim = c(-74.3, -73.7), ylim = c(40.5, 40.9), expand = FALSE) + 
+  labs(title = "Locations of NYPD-Recorded Shootings Incidents (2006-2022)")
+```
+
+Finally, Graph C showcases the longitude and latitude data of shooting arrests in and around the NYC area. From this graph we can see hot-spots of arrests, indicating a trend or tendency of violence in certain areas. For example there seems to be high instances of shooting instances around the North Harlem and East Brooklyn areas. 
+
+In a city as diverse as New York, it's crucial to acknowledge the cultural, socioeconomic, and demographic differences across various neighborhoods and boroughs. Maps serve as a powerful tool not only for understanding crime trends but also for social equity planning. They help identify communities that may be underserved or disproportionately impacted by crime. This information can be instrumental in guiding policies aimed at reducing crime disparities and improving the overall well-being of the city's residents. Ultimately, it’s important to consider all relevant variables when trying to draw any conclusions from the data. 
+
+## Conclusion
+
+Our analysis has illustrated the demographic makeup of citizens in NYC affected by shooting instances, how these trends have changed over time, and the geographical layout of shooting hot spots as indicated by NYPD arrest data. When assessing and drawing conclusions from historical shooting incidents, we limit our analysis in a couple of ways. Firstly, it’s critically relevant to include the historical significance that Black and Brown communities have faced from NYPD policing policies. These targeted policies have disproportionately affected racially marginalized communities and have broken down communication between two groups, leading to both internalized racism and outward displays of unequal treatment. More than just the historical instances of race-based policies, we have within our data the effects of the COVID-19 pandemic and the increased volume of anti-Asian violence in the years following 2020. 
+
+We can extrapolate the economic effects that the pandemic had on marginalized communities. While the city may bounce back from the shut-down, there are communities that are still reeling from the loss of employees and rising interest rates that have resulted from the global pandemic. These communities may fall victim to desperate times and resort to crime or experience mental-health-related outbursts. All of these social and economic factors play a major role in the changes in shooting frequency we have shown through analysis. New York City, much like the rest of the world, has gone through huge disruptions in a relatively short amount of time. The increased volume of shootings is indicative of a changing society facing an economic downturn, institutional healthcare failures, and an ongoing housing crisis. 
+
+That being said, this remains to be a preliminary study and further researches can be done on this data set. Moving forward, we are interested in analyzing how the difference in racial make-up between shooting perpetrators and victims changes over the years. This will provide a deeper understanding of the nuances and dynamics that underpin these events. Additionally, we are keen on exploring other potential factors that might have contributed to the low level of reports between 2017-2019. By delving into these aspects, we aim to provide a comprehensive overview of the trends and their possible implications on NYC society at large.
