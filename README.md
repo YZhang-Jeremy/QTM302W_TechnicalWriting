@@ -26,3 +26,7 @@ To engage with this analysis, you may start with the following files, presented 
 
 These CSV files contain the raw data used in the analysis. Users interested in the data processing steps or who wish to perform their own analysis should refer to these files.
 Each file is an integral part of the project's workflow, from data collection and cleaning to analysis and presentation. For detailed information on the analysis process, refer to the `NYPD_Shooting_Analysis.Rmd` file.
+
+## Authors
+Jeremy Zhang - Jeremy.Zhang@emory.edu
+Chris Pei - Chris.Pei@emory.edu
