@@ -16,13 +16,15 @@ Here’s how you can navigate through our repository:
 
 1. **README.md**: Start here for an overview of the project and its components.
 
-2. **QTM302W_TechnicalWriting.Rproj**: An RStudio project file for setting up your environment.
+2. **QTM302W_TechnicalWriting.Rproj**: An RStudio project file that helps with organizing this project. 
 
-3. **NYPD_Shooting_Analysis.Rmd**: Contains the data analysis process, including cleaning, exploration, and visualization steps.
+3. **renv.lock**: The Renv snapshot file that helps with setting up your environment. 
 
-4. **NYPD_Shooting_Analysis.html**: A formatted HTML document presenting the analysis results.
+4. **NYPD_Shooting_Analysis.Rmd**: Contains the data analysis process, including cleaning, exploration, and visualization steps.
 
-5. **Presentation.pptx**: A PowerPoint presentation summarizing key findings and conclusions.
+5. **NYPD_Shooting_Analysis.html**: A formatted HTML document presenting the analysis results.
+
+6. **Presentation.pptx**: A PowerPoint presentation summarizing key findings and conclusions.
 
 ## Data Files
 The repository includes several CSV files:
