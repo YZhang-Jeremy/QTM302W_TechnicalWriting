@@ -1,5 +1,5 @@
 ---
-title: "A Visual Approach to Shootings Recorded by NYPD"
+title: "Discovering Changes in Post-COVID-19 NYC Shooting Instances and Potential Drivers"
 author: "Jeremy Zhang, Christopher Pei"
 date: "`r Sys.Date()`"
 output: html_document
@@ -11,11 +11,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction to Data
 
-This data showcases shooting incidents recorded by NYPD across the five boroughs in NYC from 2006 through the end of 2022. This data is extracted by the Office of Management Analysis and Planning and is updated by the end of each year. The data is published in various data formats--including JSON, CSV, and XML--and is available for public access on [NYC Open Data](https://data.cityofnewyork.us/Public-Safety/NYPD-Shooting-Incident-Data-Historic-/833y-fsy8). The data includes information about the nature of the arrest, including location, time, and type of crime. Additionally, demographic information is also included, such as: race, age and sex. 
+Since the late 1980’s to 2010’s, New York City has recorded one of the most significant reductions in crime any major American city has experienced to date, culminating with “four of the seven ‘index’ felonies”, namely: homicide, rape, robbery, assault, burglary, auto theft, and theft, “showing a rate drop greater than 80%, and five of the seven over 75%” (Zimring 2011). Throughout the last three to four decades, New York City has transformed from a city with a reputation of organized crime to one of the safest major cities in the United States. 
 
-Our primary objective is to conduct a comprehensive analysis of the data, focusing specifically on the trends related to shootings in New York City over time. We aim to identify patterns, shifts, and fluctuations in shooting incidents and understand how they have evolved. Additionally, we will leverage the demographic information included in the data set to examine how these trends have influenced different age groups, racial communities, and gender-based groups within the city. This analysis will provide critical insights into the dynamics of shootings in NYC, shedding light on any disparities or specific demographic correlations that may exist in this context.
+In the early months of 2020, the SARS-CoV-2 (COVID-19) pandemic quickly forced states of emergency on major cities globally, including New York City. NYC officials implemented emergency policies including a “shelter-in-place” mandate that restricted economic activity, limited in-person gatherings, and disrupted everyday life for both civilians and criminals alike. To learn more about how these policies have changed the experience of crime in NYC for New Yorkers, our research will focus on a particularly traumatic offense: shootings. 
 
-Please note that any correlations or patterns found in our analysis is purely based on the data set provided by the NYPD. Any bias in the results that are due to biases in data collection or data entry are outside of our control. We want to recognize the role that historic policies like poor policing and redlining have on various communities within the city of New York and the possibility that those lingering policies have continued to skew interactions with law enforcement in certain communities and thus may have impacted our data. 
+This dataset provides a detailed record of shooting incidents documented by the New York Police Department (NYPD) across the five boroughs of New York City, spanning from 2006 to the end of 2022. Compiled by the Office of Management Analysis and Planning, this data is updated annually and is made publicly accessible in formats such as JSON, CSV, and XML on [NYC Open Data](https://data.cityofnewyork.us/Public-Safety/NYPD-Shooting-Incident-Data-Historic-/833y-fsy8). It encompasses critical details about each shooting incident, including location, time, and crime type, as well as demographic information on race, age, and sex of the individuals involved.
+
+The NYPD's collection of this data primarily serves to inform law enforcement strategies, public safety policies, and community policing initiatives. It's a vital tool for understanding crime patterns and guiding resource allocation. However, our analysis aims to delve deeper, extending beyond these practical applications to explore the broader trends and societal implications of shooting incidents in NYC. We will meticulously examine how these incidents have evolved over time, identifying patterns, shifts, and fluctuations, and interpreting their impact on different demographic groups within the city.
+
+Using this data, which includes information from each arrest regarding type of crime, location and time, as well as demographic descriptions, we can better understand shooting instances by focusing on three important categories, the demographic make-up of perpetrators and victims, the location of incidents, and the relationship between yearly trend of shootings and potential drivers. Using these variables, we can discover whether or not shooting instances in NYC have changed following COVID-19 and demystify any underlying casual factors. Ultimately, we hope to draw conclusions as to which groups are involved in shootings, whether we can identify any potential hot-spots or at-risk communities, and how patterns of shootings have changed since the pandemic. 
+
+It is important to note that our findings are constrained by the scope and accuracy of the NYPD data. We acknowledge that factors like historical policing policies and societal inequities could influence the data, potentially introducing biases that are beyond our control. Our analysis is thus an interpretation of the data as it stands, without asserting causation or overlooking the complexities of law enforcement interactions in diverse communities.
 
 More information and a link to our data can be found at:  
 ```
@@ -77,7 +83,7 @@ cleaned_data <- cleaned_data %>%
 
 #### Borough
 
-To check for the potential presence of unexpected or illegal values, we run `unique()` on columns to see the possible values in that column. For example, we check on `BORO` and the results look just fine.
+To check for the potential presence of unexpected or illegal values, we run `unique()` on columns to see the possible values in that column. For example, we check on `BORO` and the correctly spelled names of New York City's five boroughs are printed. This looks just fine.
 
 ```{r}
 # Check possible values
@@ -152,7 +158,7 @@ unique(cleaned_data$VIC_SEX)
 
 #### Race
 
-Finally we will inspect and clean `PERP_RACE` and `VIC_RACE`. Other than cleaning up `UNKNOWN` values, in order to make our graphs more legible, we will use `recode()` on the names of our categories to ensure that the names are not too long that the texts overlap in our visualizations. 
+Finally we will inspect and clean `PERP_RACE` and `VIC_RACE`. Other than cleaning up the `UNKNOWN` and other invalid values which are not compatible with computer processing, and in order to make our graphs more legible, we will use `recode()` on the names of our categories to ensure that the names are not too long that the texts overlap in our visualizations. 
 
 ```{r}
 # Check possible values
@@ -162,7 +168,8 @@ unique(cleaned_data$PERP_RACE)
 cleaned_data <- cleaned_data %>%
   mutate(PERP_RACE = na_if(PERP_RACE, "UNKNOWN")) %>% 
   mutate(PERP_RACE = na_if(PERP_RACE, "(null)")) %>% 
-  mutate(PERP_RACE = recode(PERP_RACE, # To avoid excessively long variable names in visualizations and leading to overlaps
+  # To avoid excessively long variable names in visualizations and leading to overlaps
+  mutate(PERP_RACE = recode(PERP_RACE, 
                             "BLACK HISPANIC" = "BLK HISP",
                             "WHITE HISPANIC" = "WHT HISP",
                             "ASIAN / PACIFIC ISLANDER" = "AAPI",
@@ -177,21 +184,45 @@ unique(cleaned_data$VIC_RACE)
 # Formatize "Unknown" and unexpected values
 cleaned_data <- cleaned_data %>%
   mutate(VIC_RACE = na_if(VIC_RACE, "UNKNOWN")) %>% 
-  mutate(VIC_RACE = recode(VIC_RACE, # To avoid excessively long variable names in visualizations and leading to overlaps
-                            "BLACK HISPANIC" = "BLK HISP",
-                            "WHITE HISPANIC" = "WHT HISP",
-                            "ASIAN / PACIFIC ISLANDER" = "AAPI",
-                            "AMERICAN INDIAN/ALASKAN NATIVE" = "NATIVE AM"))
+  # To avoid excessively long variable names in visualizations and leading to overlaps
+  mutate(VIC_RACE = recode(VIC_RACE, 
+                           "BLACK HISPANIC" = "BLK HISP",
+                           "WHITE HISPANIC" = "WHT HISP",
+                           "ASIAN / PACIFIC ISLANDER" = "AAPI",
+                           "AMERICAN INDIAN/ALASKAN NATIVE" = "NATIVE AM"))
 
 # Check results
 unique(cleaned_data$VIC_RACE)
 ```
 
-## Initial Exploration with Visualization
+## Data Exploration with Visualizations
 
-Now that the data is cleaned, we can investigate some trends within our data. Below we have created three graphs, one that shows the volume of shootings by age group, another that shows the volume by racial group and lastly a graph that tracks the total shootings over the years available in the data.
+Now that the data is cleaned, we can investigate some trends within our data. 
 
-### Visualization A (Racial Trends)
+### Map of Shootings
+
+```{r}
+library(sf)
+library(rnaturalearth)
+
+# Get NY Map
+all_states <- ne_states(returnclass = "sf")
+nyc_shape <- all_states[all_states$iso_3166_2 == "US-NY", ]
+
+ggplot(data = nyc_shape) +
+  geom_sf() +
+  geom_point(data = cleaned_data, aes(x = Longitude, y = Latitude), alpha = 0.5, color = "blue", size = 0.1) +
+  coord_sf(xlim = c(-74.3, -73.7), ylim = c(40.5, 40.9), expand = FALSE) + 
+  labs(title = "Locations of NYPD-Recorded Shootings Incidents (2006-2022)")
+```
+
+In our analysis of the NYPD Shooting Incident Data, it is imperative to begin with a geographical perspective, as the spatial distribution of incidents offers insights into urban crime dynamics. To this end, we present a graph mapping the longitude and latitude of shooting incidents throughout New York City. By using longitude and latitude data, we can being to paint the picture of shooting instances and where they happen throughout the city. By examining the geographic spread of shooting incidents, we can identify potential high volume locations and discern patterns that might be obscured in more traditional, non-spatial data analyses. 
+
+
+In analyzing this map, and as a starting point for our analysis, we aim to explore how certain communities exhibit higher instances of shooting incidents. By pinpointing these high volume locations, we can initiate a more nuanced discussion about the socio-economic and demographic characteristics of these neighborhoods and how they might relate to the observed trends in violent crime. This approach does not merely map crime but also prompts a deeper investigation into the complex tapestry of life in NYC, encompassing aspects like economic disparity, discriminatory policies, and urban development patterns.
+
+
+### Racial Trends
 
 ```{r}
 # Calculate percentage
@@ -213,11 +244,13 @@ ggplot(data = combined_df, aes(x = Race, y = Count, fill = Type)) +
   labs(title = "Race Distribution of Victims and Perpetrators (2006-2022)", y = "Percentage", x = "Race")
 ```
 
-It is notable that `BLACK` makes up over 60% of both victims and perpetrators. Specifically, the percentage of perpetrators within this group is slightly higher than that of victims. We note the same trend in `WHITE HISP`. In contrast, the `BLK HISP`, `WHITE`, and `AAPI` categories represent a substantial number of victims and a slightly lesser number of perpetrators. We are not able to make any conclusions behind this pephenomenon based on this data set. Further research should be done to answer these questions. 
+Building on the geographical insights from the first plot, which highlighted locations of historically high volumes of shooting instances within New York City, our analysis now shifts to a deeper exploration of the individuals involved in these incidents. This transition is vital to understand not just where shootings occur, but also who is most affected by them. The next graph in our analysis focuses on the racial demographics of both victims and perpetrators involved in these shootings. This aspect is particularly important given the instances observed in neighborhoods predominantly inhabited by racial minorities.
 
-Again, it is important here to mention the impact that historic racist policies have had on marginalized communities, especially Black and Brown communities. Policies like "stop and frisk" that was popular in the Michael Bloomberg mayoral era in NYC predominately targeted Black and Brown communities, causing deep distrust and agitation between law enforcement and community members. The discrepancy in policing may lead to various levels of under-reporting and over-reporting for different communities. Historial context is always important when viewing data to understand the origin of the data and the people behind it. 
+In examining the racial composition of those involved in shootings, we find that individuals identified as `BLACK` constitute over 60% of both victims and perpetrators, with a slightly higher representation among perpetrators. A similar trend is observed in the WHITE HISP category. Conversely, the `BLK HISP`, `WHITE`, and `AAPI` groups show a notable number of victims but a somewhat smaller proportion of perpetrators. It's crucial to approach these findings with caution, as we cannot draw definitive conclusions about the underlying causes of these trends from the data alone. This calls for further research to unravel the complex interplay of societal, economic, and cultural factors.
 
-### Visualization B (Yearly Trends)
+Moreover, it's imperative to consider the historical context of policing and racial dynamics in New York City, particularly in the context of controversial policing policies like "stop and frisk" during the Michael Bloomberg mayoral era. Such policies predominantly targeted Black and Brown communities, potentially leading to discrepancies in how crimes are reported and recorded in different neighborhoods. This historical backdrop is essential for a nuanced understanding of the data, reminding us that behind every statistic are real people and communities whose experiences are shaped by a legacy of systemic biases and policies.
+
+### Yearly Trends
 
 ```{r}
 # Create a OCCUR_YEAR variable from the year column of OCCUR_DATE
@@ -225,12 +258,12 @@ cleaned_data <- cleaned_data %>%
   mutate(OCCUR_YEAR = as.numeric(format(OCCUR_DATE, "%Y")))
 
 # Group the years from the OCCUR_YEAR variable and sum all the instances of shootings
-yearly_counts <- cleaned_data %>%
+yearly_shooting <- cleaned_data %>%
   group_by(OCCUR_YEAR) %>%
   summarise(COUNT = n())
 
 # Create a line plot using ggplot with OCCUR_YEAR as the x variable and the count as y. Add dots to correspond to the particular year and add test to easily see the total number associated with each year 
-ggplot(yearly_counts, aes(x = OCCUR_YEAR, y = COUNT)) +
+ggplot(yearly_shooting, aes(x = OCCUR_YEAR, y = COUNT)) +
   geom_line() +
   geom_point() +
   geom_text(aes(label = COUNT), vjust = -0.5) + 
@@ -239,41 +272,200 @@ ggplot(yearly_counts, aes(x = OCCUR_YEAR, y = COUNT)) +
        y = "Count")
 ```
 
-Visualization B sheds some light into the historic trends of shootings and how it has fluctuated year to year. Interestingly it shows that in 2020 shootings skyrocketed and rose to previous levels seen around 2010. Below we provide some social context as a way to contextualize society during the rise in shootings in NYC.
+After observing the racial demographics of shooting victims and perpetrators and overall geographical distribution, it is also critical to interpret the temporal dimension of these incidents. Understanding how shooting incidents have trended over the years is crucial for a comprehensive understanding of the dynamics of violence in New York City. The graph above provides a year-by-year breakdown of shooting incidents, offering a clear view of how these events have fluctuated over time.
 
-In NYC and around the world, communities and governments were battling with the COVID-19 pandemic, the economic effects of lock down and the strain on the healthcare system. Not only did the pandemic and resulting lock down spur on a looming economic downturn in the US, but with it came deep social unrest and discontentment with government at all levels. 
+This historical trend analysis reveals some striking patterns. Notably, the data indicates a significant surge in shootings during 2020, reaching levels not seen in over a decade. To interpret this trend effectively, it is essential to contextualize it within the broader social and economic landscape of the period.
 
-Only considering the US, there was an economic tension exemplified by a jump from around 3.5% unemployment in 2019 to almost 15% by the end of 2020. Coupled with social unrest resulting from national instances of police brutality and the death of George Floyd, it goes without saying that tensions in NYC but around the country were at levels unseen since the Great Recession in 2009 and the LA riots in the late 1990's. This might have led to more crime as well as more frequent and violent gang activities in NYC. 
+The year 2020 was marked by unprecedented challenges globally and within NYC. The outbreak of the COVID-19 pandemic, the ensuing lockdown measures, and the strain on healthcare systems had profound societal impacts. These events coincided with a severe economic downturn, as evidenced by the sharp rise in unemployment rates in the United States—from around 3.5% in 2019 to nearly 15% by the end of 2020. Additionally, this period was characterized by heightened social unrest, fueled by national incidents of police brutality and the tragic death of George Floyd. These factors collectively created an atmosphere of tension and discontentment, reminiscent of the societal strains experienced during the Great Recession in 2009 and the LA riots in the late 1990s. Such conditions may have contributed to an increase in crime, including more frequent and violent gang activities.
 
-However, it is also worthnoting that the reporting level may have also changed during the span of this data set, due to variations in police presence and report mechanisms. 
+Furthermore, it's important to acknowledge potential variations in the reporting of shooting incidents during this period. Changes in police presence, reporting mechanisms, and community interactions with law enforcement could have influenced the data. This aspect underscores the complexity of interpreting crime statistics and the need to consider how external factors might impact both the occurrence and the recording of such incidents.
 
-All of these factors comprised the context surrounding our data and are important details to keep in mind when coming to any conclusions.
 
-### Visualization C (Map of Shootings)
 
-```{r}
-library(sf)
-library(rnaturalearth)
+## NYC Shooting Instances and the COVID-19 Pandemic
 
-# Get NY Map
-all_states <- ne_states(returnclass = "sf")
-nyc_shape <- all_states[all_states$iso_3166_2 == "US-NY", ]
+With knowledge on individual variables, such as racial demographics and geographical distributions, we call for a broader investigation of potential drivers behind the surge in shootings during and after the COVID-19 pandemic. We aim to explore the interplay of various societal factors that might have contributed to this trend. This exploration is based on a series of hypotheses, which we will test by examining correlations between shooting incidents and other societal variables.
 
-ggplot(data = nyc_shape) +
-  geom_sf() +
-  geom_point(data = cleaned_data, aes(x = Longitude, y = Latitude), alpha = 0.5, color = "blue", size = 0.1) +
-  coord_sf(xlim = c(-74.3, -73.7), ylim = c(40.5, 40.9), expand = FALSE) + 
-  labs(title = "Locations of NYPD-Recorded Shootings Incidents (2006-2022)")
+### Variables
+
+#### 1) COVID-19 Cases
+
+A critical aspect of understanding the societal impact during the pandemic period involves analyzing the COVID-19 case trends. The data obtained from the [NYC Health COVID-19 Daily Counts](https://data.cityofnewyork.us/Health/COVID-19-Daily-Counts-of-Cases-Hospitalizations-an/rc75-m7u3) provides a comprehensive view of the daily case counts, hospitalizations, and deaths due to COVID-19 in New York City. 
+
+Our analysis focuses on the average monthly cases to gain insights into how the pandemic evolved over time. This approach allows us to observe the fluctuations in case numbers, highlighting periods of significant increases or decreases in infection rates. Such trends are crucial for correlating the pandemic's progression with other societal factors, such as crime rates, economic stress, and public health responses. 
+
+In particular, the analysis of COVID-19 case data revealed significant variations in the monthly average case counts. For instance, an initial surge was observed in early 2020, followed by subsequent waves, reflecting the dynamic nature of the pandemic and its impact on the city. These fluctuations in COVID-19 cases are essential to consider when examining other concurrent societal and economic changes, such as the rise in unemployment and the increase in specific types of crimes, including shootings and hate crimes.
+
+#### 2) Hate Crime
+
+The [NYPD Hate Crimes dataset](https://data.cityofnewyork.us/Public-Safety/NYPD-Hate-Crimes/bqiq-cu78) provides a crucial context for understanding the potential influence of societal tensions on shooting incidents. 
+
+Hate crimes, as documented by the NYPD, offer a glimpse into the broader climate of intolerance and aggression that could exacerbate violent behavior. The hate crime data is integral for analyzing the potential impact of societal tensions on shooting incidents, especially in light of the NYPD's policy change in 2019 to begin recording hate crimes. 
+
+This dataset offers insights into the climate of intolerance and aggression, factors that could potentially heighten violent behaviors, including shootings. However, our study's focus on shootings post-2017 encounters a limitation due to this dataset only commencing from 2019. This gap in data restricts the validity of any claims regarding the correlation between hate crimes and shootings for the initial two years of our study period. Despite this, from 2019 onwards, we can explore whether there is a parallel increase in hate crimes and shootings, thus assessing if a broader atmosphere of hostility and violence is discernible during this period.
+
+#### 3) Mental Health (Suicide Deaths) 
+
+The dataset from the CDC's [BRFSS Prevalence & Trends Data] (https://nccd.cdc.gov/BRFSSPrevalence/rdPage.aspx?rdReport=DPH_BRFSS.ExploreByTopic&irbLocationType=StatesAndMMSA&islClass=CLASS03&islTopic=TOPIC17&islYear=2021&rdRnd=6222) offers a valuable perspective on the state of mental health, focusing specifically on the prevalence of depression within New York State. While our primary interest is in New York City, the state-level data serves as the most accessible proxy, given the absence of city-specific figures. We believe this is an acceptable proxy given that almost 50% of the state's total residents live within New York City, and so any depression trends throughout the state are going to be heavily associated with trends within NYC.
+
+This source allow us to delve into the underlying mental health issues in the region, which are particularly pertinent in the context of a global pandemic. The depression prevalence data can help us understand the broader mental health challenges that may be influencing crime dynamics, including the rates of violent incidents such as shootings. This analysis acknowledges that while mental health is not a direct causative factor for criminal behavior, it can provide critical context for understanding shifts in crime patterns.
+
+#### 4) Unemployment 
+
+Economic distress, exemplified by unemployment rates, is a well-known factor influencing crime rates. The [Unemployment data from the Federal Reserve Economic Data (FRED)](https://fred.stlouisfed.org/series/NYUR) shows a significant spike in unemployment during 2020. This economic tension, heightened by the pandemic's impact, could have played a role in the increase in shootings. By analyzing unemployment trends alongside shooting incidents, we aim to uncover any correlations that suggest economic hardship as a contributing factor to the rise in violent crimes.
+
+In investigating these potential drivers, it is important to keep in mind the limitations of correlational analysis. While we can observe trends and associations, establishing causation requires a more in-depth examination that considers the multifaceted nature of social phenomena. Our exploratory analysis aims to only provide a overview of factors that seem relevant towards explaining an uptick in shooting instances following the 2020 pandemic.
+
+Additionally, our analysis must be sensitive to the context of these variables, recognizing that they are influenced by a myriad of factors, including historic and systemic issues. By integrating these additional datasets into our analysis, we aim to build a more comprehensive understanding of the post-COVID-19 landscape of shootings in New York City.
+
+### Prepare Data
+
+First we must load and clean the third-party data sets for our correlation analysis. 
+
+#### Scope of Research 
+
+To begin our analysis of the additional factors, we decided to limit the scope of our data to the five years around 2020 where we have the most complete data and can isolate any trends that may exist before and after. For our research purposes it is important to both establish a contextual baseline for each factor, hence why we start our analysis three years before 2020, and to examine any long-term impacts after the pandemic by examining the two years followings the pandemic. 
+
+```{R}
+YEAR_BEGIN = 2017
+YEAR_END = 2022
 ```
 
-Finally, Graph C showcases the longitude and latitude data of shooting arrests in and around the NYC area. From this graph we can see hot-spots of arrests, indicating a trend or tendency of violence in certain areas. For example there seems to be high instances of shooting instances around the North Harlem and East Brooklyn areas. 
 
-In a city as diverse as New York, it's crucial to acknowledge the cultural, socioeconomic, and demographic differences across various neighborhoods and boroughs. Maps serve as a powerful tool not only for understanding crime trends but also for social equity planning. They help identify communities that may be underserved or disproportionately impacted by crime. This information can be instrumental in guiding policies aimed at reducing crime disparities and improving the overall well-being of the city's residents. Ultimately, it’s important to consider all relevant variables when trying to draw any conclusions from the data. 
+#### COVID Cases
+
+In our ongoing endeavor to scrutinize the multifaceted influences on New York City's shooting incidents during the COVID-19 era, we've extended our analysis to encompass the pandemic's trajectory itself. Recognizing the potential correlation between public health crises and urban crime patterns, we've meticulously incorporated COVID-19 case data into our dataset. This integration is crucial for understanding the societal backdrop against which these shootings occurred.
+
+Our data manipulation began with the importation of the COVID-19 dataset, containing detailed daily counts of cases, hospitalizations, and deaths. The primary step involved transforming the `date_of_interest` column into a Date format, enabling precise chronological analysis. Subsequently, we introduced a `year_decimal` column, a novel construct melding the year and month into a singular, continuous decimal representation. This approach facilitates a nuanced examination of trends over time, transcending the conventional yearly analysis.
+
+Next, we adeptly calculated the monthly average of COVID-19 cases. This was achieved by grouping the data by `year_decimal` and computing the mean of the case counts. This aggregation not only refines our dataset but also provides a clearer, more digestible depiction of COVID-19's progression throughout the city. By renaming the columns to `YEAR` and `COUNT`, we've streamlined the data, aligning it cohesively with the rest of our analysis. This meticulous data manipulation reflects our steadfast commitment to elucidating the intricate web of factors influencing shooting incidents in NYC, during one of its most tumultuous periods.
+
+```{R}
+covid <- read.csv("./COVID-19_Daily_Counts_of_Cases__Hospitalizations__and_Deaths_20231116.csv")
+
+# Convert to Date format
+covid$date_of_interest <- as.Date(covid$date_of_interest, format="%m/%d/%Y")
+covid$year_decimal <- year(covid$date_of_interest) + (month(covid$date_of_interest) - 1) / 12
+
+# Calculate the monthly average cases
+covid <- covid %>%
+  group_by(year_decimal) %>%
+  summarize(Average_Cases = mean(CASE_COUNT)) %>% 
+  rename(YEAR = year_decimal, COUNT = Average_Cases)
+```
+
+#### Shooting
+
+In our focused analysis of New York City's shooting incidents from 2017 to 2022, we focus on the period encapsulating the COVID-19 pandemic. We refined our existing NYPD shooting data, selectively filtering to include only these years. This step ensures our investigation is precisely aligned with our research period, offering clarity and relevance in understanding the pandemic's impact on shooting trends. We streamlined the dataset by renaming columns to `YEAR` and `COUNT`, simplifying data integration and enhancing interpretability. This targeted manipulation of the dataset underscores our commitment to a nuanced exploration of shooting incidents in this transformative era for the city.
+
+```{R}
+yearly_shooting_covid <- yearly_shooting %>% 
+  rename(YEAR = OCCUR_YEAR, COUNT = COUNT) %>% 
+  filter((YEAR >= YEAR_BEGIN) & (YEAR <= YEAR_END))
+```
+
+#### Hate Crime
+
+In our exploration of the complex social landscape of New York City during the COVID-19 pandemic, we turned our attention to a particularly concerning phenomenon: the surge in Anti-Asian hate crimes. The Hate Crime we are particular interested in is Anti-Asian hate crime, given the increase of these related cases following Anti-Asian sentiments during the pandemic. It is also important to mention here that 2020 and 2021 were both tumultuous years for the US, with multiple instances of civil unrest, police brutality, and nation-wide protests. Anti-Asian hate crimes were one of many social issues that plagued American society and we hope future research may address other equally valid instances of social unrest and how it relates to shooting instances. 
+
+Our approach involved a detailed analysis of the NYPD Hate Crimes dataset. We cleaned this data, removing any non-numeric or missing values, particularly in the 'Complaint Year Number' column. This step was crucial to ensure the integrity and accuracy of our analysis. Subsequently, we narrowed our scope to specifically examine Anti-Asian hate crimes. We grouped the data by year and bias motive, allowing us to extract a more focused dataset. By filtering this data to include only Anti-Asian hate crimes from the years 2017 to 2022, we were able to capture the trend of these incidents in the context of the societal turmoil during this period, marked by civil unrest, police brutality, and widespread protests.
+
+This data manipulation enabled us to provide a clear and specific analysis of the rise in Anti-Asian hate crimes during a critical period in the city's history. It underscores our commitment to understanding the multifaceted impacts of societal issues on public safety and crime trends in New York City.
+
+```{R}
+hate_crime <- read.csv("./NYPD_Hate_Crimes_20231116.csv")
+
+# Checking for missing values
+summary(hate_crime)
+
+# Replace non-numeric values in 'Complaint Year Number' with NA
+hate_crime$'Complaint.Year.Number' <- as.numeric(as.character(hate_crime$'Complaint.Year.Number'))
+
+# Handle NA values if necessary, for example, by removing rows with NA in 'Complaint Year Number'
+hate_crime <- hate_crime %>% 
+  filter(!is.na('Complaint.Year.Number'))
+
+grouped_hate_crime <- hate_crime %>% group_by(Complaint.Year.Number, Bias.Motive.Description)
+
+# Apply the count
+yearly_hate <- grouped_hate_crime %>% summarise(Count = n(), .groups = 'drop') %>% 
+  rename (YEAR = Complaint.Year.Number, COUNT = Count)
+
+yearly_asian_hate <- yearly_hate %>% 
+  filter((Bias.Motive.Description == "ANTI-ASIAN") & (YEAR >= YEAR_BEGIN) & (YEAR <= YEAR_END))
+```
+
+
+#### Mental Health (Depression)
+
+To delve into the possible influence of mental health trends on New York City's shooting incidents, we focused on the prevalence of depression from 2017 to 2022. As the relevant dataset was not available in a standard file format, we manually constructed a dataframe to encapsulate this crucial information. This data, sourced from the [CDC's BRFSS Prevalence & Trends Data](https://nccd.cdc.gov/BRFSSPrevalence/rdPage.aspx?rdReport=DPH_BRFSS.ExploreByTopic&irbLocationType=StatesAndMMSA&islClass=CLASS03&islTopic=TOPIC17&islYear=2021&rdRnd=6222), provides a yearly snapshot of depression rates, offering insights into the mental health landscape during this period.
+
+In our dataframe, `yearly_depression`, we meticulously recorded the percentage of the population reported to have depression for each year, starting from 2017 through 2022. This deliberate selection of years mirrors our overarching research timeline, ensuring consistency across our analysis. The inclusion of mental health data is pivotal, as it allows us to consider the broader societal factors that might influence the incidence of shootings, acknowledging the complex interplay between mental health and urban crime dynamics.
+
+```{R}
+yearly_depression <- data.frame(
+  YEAR = c(2017, 2018, 2019, 2020, 2021, 2022),
+  COUNT = c(16, 15.1, 15.3, 16.8, 17, 17.8)
+)
+```
+
+
+#### Unemployment
+
+In parallel with our analysis of COVID-19 cases, we delved into the dynamics of unemployment in New York City, focusing on the same critical period from 2017 to 2022. This exploration is vital for understanding the potential economic underpinnings of shooting incidents in the city.
+
+We began by importing the unemployment data and converting the `DATE` column into a Date format for more precise temporal analysis. To align with our research timeline, we transformed the dates into a year-decimal format, blending the year and month into a single, continuous metric. This conversion facilitates a refined analysis over time, offering nuanced insights into the fluctuations of unemployment rates.
+
+Next, we filtered this dataset to isolate data from 2017 to 2022, ensuring a focused examination of unemployment trends during and post the COVID-19 pandemic. By renaming the columns for consistency and clarity, we prepared the dataset for an integrated analysis with other variables, underscoring our commitment to a comprehensive exploration of the factors influencing New York City's shooting incidents in this pivotal era.
+
+```{R}
+unemployment <- read.csv("./NYUR.csv")
+
+# Convert DATE to a Date object
+unemployment$DATE <- as.Date(unemployment$DATE)
+
+# Extract year and month, and convert month to a decimal
+unemployment$YearDecimal <- year(unemployment$DATE) + (month(unemployment$DATE) - 1) / 12
+
+yearly_unemployment <- unemployment %>% 
+  rename(YEAR = YearDecimal, COUNT = NYUR) %>% 
+  filter((YEAR >= YEAR_BEGIN) & (YEAR <= YEAR_END))
+```
+
+
+### Plotting
+
+After all the initial cleaning, we will incorporate all four of factors into one combined plot to help visualize the effects of each of them mapped against shooting instances. This visualization will help us compare and see how closely the fluctuations in our chosen factors map onto fluctuations in shooting instances.
+
+```{R fig.width=4, fig.height=8}
+library(patchwork)
+
+plot1 <- ggplot(yearly_shooting_covid, aes(x = YEAR, y = COUNT)) + geom_line() + ggtitle("NYPD Recorded Shootings") + labs(y = "Incidents", x = "Year")
+plot2 <- ggplot(covid, aes(x = YEAR, y = COUNT)) + geom_line() + ggtitle("Prevalence of COVID-19 in NYC") + scale_x_continuous(limits = c(2017, 2022)) + labs(y = "Cases", x = "Year")
+plot3 <- ggplot(yearly_asian_hate, aes(x = YEAR, y = COUNT)) + geom_line() + ggtitle("Anti-Asian Hate Crimes") + scale_x_continuous(limits = c(2017, 2022)) + labs(y = "Reported Incidents", x = "Year")
+plot4 <- ggplot(yearly_depression, aes(x = YEAR, y = COUNT)) + geom_line() + ggtitle("Depression") + labs(y = "Pop. with Depression (%)", x = "Year")
+plot5 <- ggplot(yearly_unemployment, aes(x = YEAR, y = COUNT)) + geom_line() + ggtitle("NYC Unemployment Rates") + labs(y = "Unemployed Pop. (%)", x = "Year")
+
+combined_plot <- plot1 / plot2 / plot3 / plot4 / plot5
+
+combined_plot
+```
+The analytical comparison of various societal factors such as the prevalence of COVID-19, NYPD recorded shootings, the occurrence of Anti-Asian hate crimes, levels of depression, and unemployment rates across New York City from the years 2017 to 2022 unfolds a multifaceted narrative that is deeply interwoven with the impacts of the COVID-19 pandemic on the fabric of urban society. The observed data patterns suggest more than a mere coincidence but a complex interrelation between the pandemic's progression and significant fluctuations in social unrest, mental health deterioration, economic volatility, and crime dynamics, with a specific focus on the incidence of shootings.
+
+In the tumultuous year of 2020, there is a marked escalation in shooting incidents that aligns temporally with the zenith of COVID-19 cases, hinting at the immense stress and societal disruption triggered by the pandemic. This escalation in violent crime is paralleled by an unsettling rise in Anti-Asian hate crimes, which, although constrained by the NYPD's data recording commencement in 2019, unmistakably show a spike in such incidents during the pandemic and its aftermath. This notable increase in racially motivated crimes highlights the intensified racial tensions and underscores the broader societal fissures that were deepened by the pandemic, contributing to an overall climate of disquiet that may have had a substantial influence on crime rates, particularly those involving violence.
+
+Looking at the trends in unemployment, there is a pronounced and abrupt increase in 2020, which corresponds with the onset of the citywide lockdown and the consequent economic challenges. This sharp rise in unemployment aligns with the increased shooting incidents, lending credence to the sociological theories that posit economic hardship as a potential catalyst for heightened criminal activity. Concurrently, the gradual ascent in the percentage of the population reporting depression, culminating in higher figures in the years following the pandemic, suggests an intensifying mental health crisis. The implications of this mental health trend could be wide-ranging, potentially contributing to the societal distress that manifests in increased violent crime rates.
+
+It is important to note that these visualized trends, while striking and indicative of a correlation, must be approached with a degree of caution and understood within a broader context that includes systemic, historical, and circumstantial factors. The data presented can only indicate correlations; it does not imply direct causation, and there exist numerous potential confounding factors and underlying variables that this analysis does not account for. Consequently, there is a clear need for further and more comprehensive research to fully decipher the nuances and complexities of these relationships, particularly given the limitations of the hate crime data and the myriad of other factors that might influence the true nature and extent of these pressing social challenges.
+
+In essence, the objective of this analysis is not to simplify the causality behind the patterns of shootings in NYC but rather to illuminate the multifaceted and at times, indirect influences that the COVID-19 pandemic has exerted on different aspects of city life, including but not limited to the domains of public safety and communal well-being.
 
 ## Conclusion
 
-Our analysis has illustrated the demographic makeup of citizens in NYC affected by shooting instances, how these trends have changed over time, and the geographical layout of shooting hot spots as indicated by NYPD arrest data. When assessing and drawing conclusions from historical shooting incidents, we limit our analysis in a couple of ways. Firstly, it’s critically relevant to include the historical significance that Black and Brown communities have faced from NYPD policing policies. These targeted policies have disproportionately affected racially marginalized communities and have broken down communication between two groups, leading to both internalized racism and outward displays of unequal treatment. More than just the historical instances of race-based policies, we have within our data the effects of the COVID-19 pandemic and the increased volume of anti-Asian violence in the years following 2020. 
+Our analysis has illustrated the demographic makeup of citizens in NYC affected by shooting instances, how these trends have changed over time, and the geographical layout of shooting high volume locations as indicated by NYPD arrest data. When assessing and drawing conclusions from historical shooting incidents, we limit our analysis in a couple of ways. Firstly, it’s critically relevant to include the historical significance that Black and Brown communities have faced from NYPD policing policies. These targeted policies have disproportionately affected racially marginalized communities and have broken down communication between two groups, leading to both internalized racism and outward displays of unequal treatment. More than just the historical instances of race-based policies, we have within our data the effects of the COVID-19 pandemic and the increased volume of anti-Asian violence in the years following 2020. 
 
 We can extrapolate the economic effects that the pandemic had on marginalized communities. While the city may bounce back from the shut-down, there are communities that are still reeling from the loss of employees and rising interest rates that have resulted from the global pandemic. These communities may fall victim to desperate times and resort to crime or experience mental-health-related outbursts. All of these social and economic factors play a major role in the changes in shooting frequency we have shown through analysis. New York City, much like the rest of the world, has gone through huge disruptions in a relatively short amount of time. The increased volume of shootings is indicative of a changing society facing an economic downturn, institutional healthcare failures, and an ongoing housing crisis. 
 
-That being said, this remains to be a preliminary study and further researches can be done on this data set. Moving forward, we are interested in analyzing how the difference in racial make-up between shooting perpetrators and victims changes over the years. This will provide a deeper understanding of the nuances and dynamics that underpin these events. Additionally, we are keen on exploring other potential factors that might have contributed to the low level of reports between 2017-2019. By delving into these aspects, we aim to provide a comprehensive overview of the trends and their possible implications on NYC society at large.
+The correlation drawn between the rise in COVID-19 cases and the spike in shootings suggests a potential linkage where the societal upheaval brought on by the pandemic may have acted as a catalyst for increased violence. Concurrently, the surge in unemployment rates during the same period offers a lens through which we can examine the economic strains that could potentially fuel criminal behavior. Moreover, the ascending trend in depression rates aligns ominously with the uptick in shootings, proposing that the pandemic's toll on mental health may also be a factor in the complex equation of rising urban violence. Additionally, the introduction of hate crime data into our analysis, specifically the Anti-Asian incidents, despite the NYPD's recording practices starting only in 2019, provides a critical perspective on the racial and ethnic tensions that have intensified during the pandemic and their possible influence on the landscape of crime. This aspect of our study, though limited by data availability, nonetheless reinforces the narrative that societal strife, exacerbated by a global health crisis, is mirrored in the patterns of violent crime.
+
+We posit that the series of these factors presents a compelling foundation from which we can begin to unravel the reasons behind the increase in shooting incidents following 2020. It is a narrative that not only encapsulates the direct consequences of a global health crisis but also the broader spectrum of social and economic disruptions that have afflicted New York City during this time. That being said, this remains to be a preliminary study and further researches can be done on this data set. Moving forward, we are interested in analyzing how the difference in racial make-up between shooting perpetrators and victims changes over the years. This will provide a deeper understanding of the nuances and dynamics that underpin these events. Additionally, we are keen on exploring other potential factors that might have contributed to the low level of reports between 2015-2019. By delving into these aspects, we aim to provide a comprehensive overview of the trends and their possible implications on NYC society at large.
